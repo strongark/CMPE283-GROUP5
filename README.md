@@ -14,3 +14,10 @@ Apache tomcat should be downlaoded
 5. Resolve errors if any
 6. Right click and Run on server (Tomcat)
 7. Access : localhost:8080/VStack
+
+
+Project includes : 
+1. Spring framework to "wire" different components together.
+2. Angular JS connectivity 
+3. Database Connectivity
+4. Openstack API classes
