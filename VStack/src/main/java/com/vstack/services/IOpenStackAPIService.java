@@ -43,7 +43,7 @@ public interface IOpenStackAPIService {
 	public void resumeInstance(String jsonInput);	
 
 	///call shell command: $nova delete INSTANCE_NAME
-	public String deleteInstance(String jsonInput);	
+	public void deleteInstance(String jsonInput);	
 
 
 }
