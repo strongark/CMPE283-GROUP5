@@ -10,6 +10,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.vstack.beans.ComputeInstance;
+import com.vstack.beans.InstanceDetails;
 import com.vstack.services.VStackException;
 import com.vstack.services.VStackUtils;
 
@@ -65,15 +66,15 @@ public class InstanceService {
 	 * 
 	 * @throws Exception
 	 */
-	public ComputeInstance getInstanceByName(String name) throws  VStackException {
-		ComputeInstance instanceDetails = new ComputeInstance();
+	public InstanceDetails getInstanceByName(String name) throws  VStackException {
+		InstanceDetails instanceDetails = new InstanceDetails();
 		 
 		try { 
 			OpenStackApiService apiService = new OpenStackApiService(server, token);
 			Map<String, String> list = getInstances();
 			
 			String response = apiService.getInstance(list.get(name));
-			logger.info("Find instance info for " + name);
+			logger.info("Find instance info for " + response);
 			JSONObject jsonObj = new JSONObject(response).getJSONObject("server");
 			
 			String status = jsonObj.getString("status");
@@ -84,7 +85,12 @@ public class InstanceService {
 				List<String> networkList = new ArrayList<String>();
 				while(i< ipAddresses.length()) {
 					String ip = ipAddresses.getJSONObject(i).getString("addr");
+					String type = ipAddresses.getJSONObject(i).getString("OS-EXT-IPS-MAC:mac_addr");
 					networkList.add(ip);
+					System.out.println(ip);
+					Map<String, String> nwlist = new HashMap<String, String> ();
+					nwlist.put(type, ip);
+					instanceDetails.setAddresses(nwlist);
 					i++;
 				}
 			}

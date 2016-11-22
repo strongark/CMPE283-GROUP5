@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.vstack.beans.ComputeInstance;
+import com.vstack.beans.InstanceDetails;
 import com.vstack.beans.OpenstackConnection;
 import com.vstack.openstack.services.AuthService;
 import com.vstack.openstack.services.FlavorService;
@@ -107,7 +108,7 @@ public class ComputeController implements OpenstackAPI {
 
 				logger.info("------ Get Instance ------");
 				InstanceService instanceService = new InstanceService(connection.getServer(), authentication.getAuthToken());
-				ComputeInstance details = instanceService.getInstanceByName(instance);
+				InstanceDetails details = instanceService.getInstanceByName(instance);
 
 				ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
 				
@@ -164,7 +165,7 @@ public class ComputeController implements OpenstackAPI {
 				logger.info("------ Launch Instance ------");
 				InstanceService instanceService = new InstanceService(connection.getServer(), authentication.getAuthToken());
 				Map<String, String> instanceId = instanceService.launchInstance(instance);
-				ComputeInstance instanceDetail = instanceService.getInstanceByName(instance.getInstanceName());
+				InstanceDetails instanceDetail = instanceService.getInstanceByName(instance.getInstanceName());
 				
 				VStackUtils.handleResponse(response, "Instance Created. Status :" + instanceDetail.getStatus());
 			} catch (UnknownHostException ex) {
