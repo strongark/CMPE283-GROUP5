@@ -15,15 +15,7 @@ public class TestRESTApi {
 		conn.setServer("10.0.0.11");
 		conn.setUsername("admin");
 		conn.setPassword("admin_user_secret");
-		conn.setPort("5000");
-		
-		//Set Auth Token
-		authentication.setAuthToken(conn);
-		
-		List<String> projectList = authentication.getOpenstackProjects();
-		for(String project : projectList) {
-			System.out.println(project);
-		}
+		 
 		
 		} catch(Exception ex) {
 			

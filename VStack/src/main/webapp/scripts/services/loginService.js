@@ -8,8 +8,8 @@ angular.module('yapp').factory('AuthenticationService',
 						var connection = {
 							server : server,
 							username : username,
-							password : password,
-							port : "5000"
+							password : password
+							//port : "5000"
 						};
 						$http({
 							method : 'POST',

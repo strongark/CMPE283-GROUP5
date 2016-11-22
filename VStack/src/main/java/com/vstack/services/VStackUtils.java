@@ -1,12 +1,25 @@
 package com.vstack.services;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.json.JSONException;
 
 /**
  * Utility Class for the Aegis Toolkit
@@ -32,11 +45,12 @@ public class VStackUtils {
 	 * Log Directory for putting Logs and Scripts
 	 */
 	public static String LOG_DIR = SYSTEM_TMP_DIR + FS + "logs";
-	
+
 	/**
 	 * Temporary Directory for Charts
 	 */
 	public static String CHARTS_DIR = "charts";
+
 	/**
 	 * Throw exception
 	 * 
@@ -86,6 +100,82 @@ public class VStackUtils {
 		VStackUtils.contextPath = contextPath;
 	}
 
+	// Author: Tran.Pham
+	// Create date: Oct 1st, 2016
+	// Desc: execute the http call to url
+	public static String executeHttpPostRequest(String token, String url, String body)
+			throws IOException, ClientProtocolException, JSONException {
+
+		HttpPost Req = new HttpPost(url);
+		Req.addHeader("Content-Type", "application/json");
+		Req.addHeader("accept", "application/json");
+		if (!token.isEmpty())
+			Req.addHeader("X-Auth-Token", token);
+		if (!body.isEmpty()) {
+			HttpEntity entity = new ByteArrayEntity(body.getBytes());
+			Req.setEntity(entity);
+		}
+
+		return executeHttpRequest(Req);
+	}
+
+	// Author: Tran.Pham
+	// Create date: Oct 1st, 2016
+	// Desc: execute the http call to url
+	public static String executeHttpGetRequest(String token, String url)
+			throws IOException, ClientProtocolException, JSONException {
+
+		HttpGet Req = new HttpGet(url);
+		Req.addHeader("Content-Type", "application/json");
+		Req.addHeader("accept", "application/json");
+		if (!token.isEmpty())
+			Req.addHeader("X-Auth-Token", token);
+
+		return executeHttpRequest(Req);
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @return
+	 * @throws IOException
+	 * @throws ClientProtocolException
+	 */
+	public static String executeHttpRequest(HttpUriRequest request) throws IOException, ClientProtocolException {
+		 
+		HttpClient httpClient1 = HttpClientBuilder.create().build();
+		HttpResponse response1 = httpClient1.execute(request);
+		int statusCode = response1.getStatusLine().getStatusCode();
+		switch (statusCode) {
+		case 200:
+			break;
+		// Auth-Token-Response
+		case 201: {
+			String xToken = response1.getFirstHeader("X-Subject-Token").getValue();
+			return xToken;
+		}
+		// POST /Servers response
+		case 202: {
+			break;
+		}
+		case 300:
+			throw new RuntimeException("Multiple version of API detected : " + statusCode);
+		default:
+			throw new RuntimeException("Failed : HTTP error code : " + statusCode);
+		}
+		;
+
+		BufferedReader br = new BufferedReader(new InputStreamReader((response1.getEntity().getContent())));
+
+		String jsonData = "";
+		String line;
+		while ((line = br.readLine()) != null)
+			jsonData += line + "\n";
+
+		httpClient1.getConnectionManager().shutdown();
+
+		return jsonData;
+	}
 
 	/**
 	 * Handle RuntimeException
@@ -95,7 +185,8 @@ public class VStackUtils {
 	 * @param message
 	 * @throws IOException
 	 */
-	public static void handleRuntimeException(Exception ex, HttpServletResponse response, String message) throws IOException {
+	public static void handleRuntimeException(Exception ex, HttpServletResponse response, String message)
+			throws IOException {
 		response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		response.getWriter().write(message + " " + ex.getMessage());
 		response.flushBuffer();

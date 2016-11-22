@@ -4,7 +4,6 @@ package com.vstack.controller;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.List;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
@@ -57,14 +56,13 @@ public class HomeController {
 
 					logger.info("Openstack server " + connection.getServer() + "is reachable");
 
-					if (connection.getPort() == null || connection.getPort().isEmpty()) {
-						connection.setPort("5000");
-					}
-					
 					//Set Auth Token
-					AuthService authentication = new AuthService();
-					authentication.setAuthToken(connection);
-					
+					 
+					this.authentication.setAuthToken(connection);
+					this.connection.setServer(connection.getServer());
+					this.connection.setUsername(connection.getUsername());
+					this.connection.setPassword(connection.getPassword());
+							
 					/* Set Auth Token
 					customUserDetailsService.setUserDao(userDao);
 					UserDetails userDetails = customUserDetailsService.loadUserByUsername(connection.getUsername()); 

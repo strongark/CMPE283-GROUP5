@@ -1,109 +1,94 @@
 package com.vstack.openstack.services;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.log4j.Logger;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.map.ObjectMapper;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import com.vstack.beans.OpenstackConnection;
-import com.vstack.services.IOpenStackAPIService;
 import com.vstack.services.VStackException;
 import com.vstack.services.VStackUtils;
 
-public class AuthService implements IOpenStackAPIService{
+public class AuthService implements OpenstackAPI {
+
 	private static Logger logger = Logger.getLogger("AuthService");
-	
-	//hardcoded value
-	public static String authToken = "d340583d683dd11c0076";
-	public static String compute_url;
-	
-	//Set Authentication Session
-	public void setAuthToken(OpenstackConnection connection) {
-		
-		//Assuming http protocol
-		compute_url = "http://" + connection.getServer() + ":" + connection.getPort();
-		
-		//TODO API Call 
-		String authURL = compute_url + AUTH_API ; 
-		
-		
-		
+	private String authToken = null;
+
+	public String getAuthToken() {
+		return authToken;
 	}
-	
-	
+
+	/**
+	 * Author: Tran.Pham Create date: Oct 1st, 2016 Desc: execute the http call
+	 * to url
+	 * 
+	 * @param conn
+	 * @throws VStackException
+	 */
+	public void setAuthToken(OpenstackConnection conn) throws VStackException {
+
+		String api = "v3"; // TODO code for v2
+		String url = "http://" + conn.getServer() + KEYSTONE_IDENTITY + AUTH_API;
+		String reqBody;
+		if (api.equals(API_VERSION2)) {
+			reqBody = "{\"auth\":{\"passwordCredentials\":{\"username\":\"" + conn.getUsername() + "\",\"password\":\""
+					+ conn.getPassword() + "\"}}}";
+		} else {
+			reqBody = "{\"auth\": {\"identity\": {\"methods\": [\"password\"],"
+					+ "\"password\": {\"user\": {\"domain\": {\"name\": \"default\"}," + "\"name\": \""
+					+ conn.getUsername() + "\",\"password\": \"" + conn.getPassword() + "\"}"
+					+ "}},\"scope\": {\"project\": {\"domain\": {\"name\": \"default\"}," + "\"name\": \"admin\"}}}}";
+		}
+		try {
+
+			String jsonData = VStackUtils.executeHttpPostRequest("", url, reqBody);
+
+			if (api.equals(API_VERSION2)) {
+				JSONObject jsonToken;
+				JSONObject json = new JSONObject(jsonData);
+				jsonToken = json.getJSONObject("access").getJSONObject("token");
+				System.out.println(jsonToken.getString("id"));
+				this.authToken = jsonToken.getString("id");
+			} else {
+				System.out.println(jsonData);
+				this.authToken = jsonData;
+			}
+
+		} catch (Exception ex) {
+			throw new VStackException(ex.getMessage());
+		}
+	}
+
 	/**
 	 * Get Openstack Projects
 	 * 
 	 * @throws Exception
 	 */
-	public List<String> getOpenstackProjects() throws  VStackException {
+	public List<String> getOpenstackProjects(OpenstackConnection conn, String authToken) throws VStackException {
 		List<String> projectList = new ArrayList<String>();
-		String url = AuthService.compute_url + GET_PROJECT_API;
+		String url = "http://" + conn.getServer() + KEYSTONE_IDENTITY + GET_PROJECT_API;
 
 		try {
-			HttpClient client = HttpClientBuilder.create().build();
-			HttpGet request = new HttpGet(url);
+			String json = VStackUtils.executeHttpGetRequest(authToken, url);
 
-			// add request header
-			request.setHeader("X-Auth-Token", AuthService.authToken);
-			HttpResponse response = client.execute(request);
+			JSONObject jsonObj = new JSONObject(json);
+			JSONArray jsonToken = jsonObj.getJSONArray("projects");
+			int i = 0;
 
-			StringBuffer result = new StringBuffer();
-			BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
-
-			String line = "";
-			while ((line = rd.readLine()) != null) {
-				result.append(line);
-			}
-
-			// If the GET call returns success code
-			if (response.getStatusLine().getStatusCode() == 200) {
-
-				JsonFactory factory = new JsonFactory();
-				ObjectMapper mapper = new ObjectMapper(factory);
-				JsonNode rootNode = mapper.readTree(result.toString());
-
-				Iterator<Map.Entry<String, JsonNode>> fieldsIterator = rootNode.getFields();
-				while (fieldsIterator.hasNext()) {
-
-					Map.Entry<String, JsonNode> field = fieldsIterator.next();
-					if (field.getKey().equals("projects")) {
-						JsonNode root = field.getValue();
-						if (root.isArray()) {
-							for (int i = 0; i < root.size(); i++) {
-								Iterator<Entry<String, JsonNode>> node = root.get(i).getFields();
-								while (node.hasNext()) {
-									Entry<String, JsonNode> keyVal = node.next();
-									if (keyVal.getKey().equals("name")) {
-
-										projectList.add(keyVal.getValue().asText());
-									}
-								}
-							}
-						}
-					}
-				}
-			} else {
-				System.err.println("Problem Occured. /projects API Returned " + response.getStatusLine().getStatusCode());
-				throw new VStackException("Error Executing Projects API");
+			while (i < jsonToken.length()) {
+				String projects = jsonToken.getJSONObject(i).getString("name");
+				projectList.add(projects);
+				i++;
 			}
 		} catch (Exception ex) {
 			logger.fatal(ex.getMessage());
 			VStackUtils.returnExceptionTrace(ex);
 			throw new VStackException(ex);
 		}
+
 		return projectList;
 	}
+
 }

@@ -2,7 +2,7 @@ package com.vstack.beans;
 
 public class OpenstackConnection {
 	private String server = null;
-	private String port = null;
+	//private String port = null;
 	private String username = null;
 	private String password = null;
 
@@ -14,14 +14,14 @@ public class OpenstackConnection {
 		this.server = server;
 	}
 
-	public String getPort() {
+	/*public String getPort() {
 		return port;
 	}
 
 	public void setPort(String port) {
 		this.port = port;
 	}
-
+*/
 	public String getUsername() {
 		return username;
 	}
